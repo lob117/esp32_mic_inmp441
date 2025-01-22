@@ -1,0 +1,86 @@
+#include <WiFi.h>
+#include <driver/i2s.h>
+
+// Configuración de red WiFi
+const char* ssid = "MERCUSYS_D96C"; // Nombre de la red
+const char* password = "";          // Red sin contraseña
+
+IPAddress local_IP(192, 168, 1, 102);  // Cambia según tu red
+// Configuración del servidor
+int puerto=8082;
+WiFiServer server(puerto);
+
+// Configuración de pines I2S
+#define I2S_BCK_PIN 14
+#define I2S_WS_PIN  15
+#define I2S_SD_PIN  32
+
+void setup() {
+  Serial.begin(115200);
+  if (!WiFi.config(local_IP)) {
+    Serial.println("Fallo en la configuración estática de la IP");
+  }
+  // Conectar a la red WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConectado a WiFi!");
+  Serial.println(WiFi.localIP()); // Mostrar la IP asignada a la ESP32
+
+  // Iniciar el servidor
+  server.begin();
+  Serial.print("Servidor iniciado en el puerto ");
+  Serial.println(puerto);
+
+  // Configurar I2S
+  i2s_config_t i2s_config = {
+      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX), // Modo maestro, recepción
+      .sample_rate = 22050,                               // Frecuencia de muestreo
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,       // Resolución de las muestras
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,        // Canal izquierdo
+      .communication_format = I2S_COMM_FORMAT_I2S,       // Formato I2S
+      .intr_alloc_flags = 0,                              // Sin interrupciones adicionales
+      .dma_buf_count = 8,                                 // Número de buffers DMA
+      .dma_buf_len = 128,                                 // Tamaño del buffer DMA
+      .use_apll = false                                   // Sin APLL
+  };
+
+  i2s_pin_config_t pin_config = {
+      .bck_io_num = I2S_BCK_PIN,
+      .ws_io_num = I2S_WS_PIN,
+      .data_out_num = I2S_PIN_NO_CHANGE, // No salida de datos
+      .data_in_num = I2S_SD_PIN
+  };
+
+  i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);  // Instalar el controlador I2S
+  i2s_set_pin(I2S_NUM_0, &pin_config);                 // Configurar pines
+
+  Serial.println("I2S configurado correctamente");
+}
+
+void loop() {
+  WiFiClient client = server.available(); // Esperar conexión del cliente
+
+  if (client) {
+    Serial.println("Cliente conectado");
+
+    while (client.connected()) {
+      int16_t data[256]; // Buffer para datos de audio
+      size_t bytes_read;
+
+      // Leer datos del micrófono
+      i2s_read(I2S_NUM_0, &data, sizeof(data), &bytes_read, portMAX_DELAY);
+
+      // Enviar datos al cliente
+      if (bytes_read > 0) {
+        client.write((uint8_t*)data, bytes_read);
+      }
+    }
+
+    client.stop();
+    Serial.println("Cliente desconectado");
+  }
+}
