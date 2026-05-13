@@ -3,7 +3,7 @@
 
 # 🎙️ Sistema de Captura y Transmisión de Audio Wi-Fi (ESP32 + INMP441)
 
-Este proyecto consiste en un sistema de hardware y software diseñado para la adquisición, transmisión en tiempo real e identificación de eventos acústicos (como disparos). Utiliza el **ESP32** como microcontrolador principal para capturar sonido digital de alta calidad y transmitirlo a través de una red Wi-Fi.
+Este proyecto consiste en un sistema de hardware y software diseñado para la adquisición, transmisión en tiempo real e identificación de eventos acústicos (como disparos). Utiliza el **ESP32** como microcontrolador principal para capturar sonido digital de alta calidad y transmitirlo a través de una red Wi-Fi el codigo final es V01 y pruebas es main_1.
 
 El diseño es completamente autónomo energéticamente, operando con una batería de litio recargable.
 
